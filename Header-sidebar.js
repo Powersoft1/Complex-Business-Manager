@@ -61,28 +61,34 @@ class AppHeaderSidebar {
     }
 
     static generateNavItems() {
-        const navItems = [
-            { icon: 'tachometer-alt', text: 'Dashboard', href: 'index.html' },
-            { icon: 'boxes', text: 'Inventory', href: 'inventory.html' },
-            { icon: 'shopping-cart', text: 'Sales', href: 'sales.html' },
-            { icon: 'users', text: 'Customers', href: 'customers.html' },
-            { icon: 'clipboard-list', text: 'Daily Stock', href: 'stock-management.html' },
-            { icon: 'truck', text: 'Order Tracking', href: 'order-tracking.html' },
-            { icon: 'chart-line', text: 'Profit and Loss', href: 'profit.html' },
-            { icon: 'money-bill-wave', text: 'Finance', href: 'finance.html' },
-            { icon: 'chart-bar', text: 'Reports', href: 'reports.html' },
-            { icon: 'cog', text: 'Settings', href: 'settings.html', divider: true }
-        ];
-        
-        return navItems.map(item => `
-            <li${item.divider ? ' class="divider"' : ''}>
-                <a href="${item.href}">
-                    <i class="fas fa-${item.icon}"></i>
-                    <span>${item.text}</span>
-                </a>
-            </li>
-        `).join('');
-    }
+    const navItems = [
+        { icon: 'tachometer-alt', text: 'Dashboard', href: 'index.html' },
+        { icon: 'boxes', text: 'Inventory', href: 'inventory.html', divider: true },
+        { icon: 'truck', text: 'Order Tracking', href: 'order-tracking.html' },
+        { icon: 'shopping-cart', text: 'Sales', href: 'sales.html' },
+        { icon: 'clipboard-list', text: 'Daily Stock', href: 'daily-stock.html' },
+        { icon: 'money-bill-wave', text: 'Finance', href: 'finance.html', divider: true },
+        { icon: 'chart-line', text: 'Profit and Loss', href: 'profit.html' },
+        { icon: 'users', text: 'Customers', href: 'customers.html' },
+        { icon: 'chart-pie', text: 'Reports', href: 'reports.html' },
+        { icon: 'cog', text: 'Settings', href: 'settings.html', divider: true },
+        { icon: 'code', text: 'Web Engine', href: 'web-engine.html' },
+        { icon: 'lightbulb', text: 'Upcoming Features', href: 'upcoming-features.html', divider: true },
+        { icon: 'laptop-code', text: 'Related Softwares', href: 'related-softwares.html' },
+        { icon: 'ad', text: 'Adverts', href: 'ads.html' },
+        { icon: 'headset', text: 'Contact Support', href: 'contact.html' },
+        { icon: 'sign-out-alt', text: 'Logout', href: 'login.html', divider: true }
+    ];
+    
+    return navItems.map(item => `
+        <li${item.divider ? ' class="divider"' : ''}>
+            <a href="${item.href}">
+                <i class="fas fa-${item.icon}"></i>
+                <span>${item.text}</span>
+            </a>
+        </li>
+    `).join('');
+}
 
     static addStyles() {
         const style = document.createElement('style');
