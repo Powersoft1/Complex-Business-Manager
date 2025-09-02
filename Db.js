@@ -1,4 +1,4 @@
-// db.js - Shared IndexedDB configuration for all pages
+// db.js - Shared IndexedDB configuration with subscription validation
 var DB_CONFIG = {
     name: 'BusinessManagerDB',
     version: 1,
@@ -82,8 +82,129 @@ var DB_CONFIG = {
     }
 };
 
+// Subscription configuration
+const SUBSCRIPTION_CONFIG = {
+    debtValue: 0, // Set to 0 if no debt, positive value if debt exists
+    subscriptionDate: '2025-9-1', // Format: YYYY-MM-DD
+    durationDays: 30 // Duration in days
+};
+
+// Function to create and show subscription modal with Font Awesome
+function showSubscriptionModal(title, message) {
+    // Create modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'subscriptionModalOverlay';
+    modalOverlay.style.position = 'fixed';
+    modalOverlay.style.top = '0';
+    modalOverlay.style.left = '0';
+    modalOverlay.style.width = '100%';
+    modalOverlay.style.height = '100%';
+    modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modalOverlay.style.display = 'flex';
+    modalOverlay.style.justifyContent = 'center';
+    modalOverlay.style.alignItems = 'center';
+    modalOverlay.style.zIndex = '10000';
+    
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = '#fff';
+    modalContent.style.borderRadius = '8px';
+    modalContent.style.padding = '20px';
+    modalContent.style.width = '90%';
+    modalContent.style.maxWidth = '500px';
+    modalContent.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+    
+    // Create modal header with icon
+    const modalHeader = document.createElement('div');
+    modalHeader.style.display = 'flex';
+    modalHeader.style.alignItems = 'center';
+    modalHeader.style.marginBottom = '15px';
+    
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-exclamation-triangle';
+    icon.style.color = '#ff9800';
+    icon.style.fontSize = '24px';
+    icon.style.marginRight = '10px';
+    
+    const titleEl = document.createElement('h3');
+    titleEl.textContent = title;
+    titleEl.style.margin = '0';
+    titleEl.style.color = '#333';
+    
+    modalHeader.appendChild(icon);
+    modalHeader.appendChild(titleEl);
+    
+    // Create modal body
+    const modalBody = document.createElement('div');
+    modalBody.textContent = message;
+    modalBody.style.marginBottom = '20px';
+    modalBody.style.color = '#555';
+    modalBody.style.lineHeight = '1.5';
+    
+    // Create OK button
+    const okButton = document.createElement('button');
+    okButton.textContent = 'OK';
+    okButton.style.display = 'block';
+    okButton.style.marginLeft = 'auto';
+    okButton.style.padding = '8px 20px';
+    okButton.style.backgroundColor = '#4CAF50';
+    okButton.style.color = 'white';
+    okButton.style.border = 'none';
+    okButton.style.borderRadius = '4px';
+    okButton.style.cursor = 'pointer';
+    okButton.style.fontSize = '16px';
+    
+    okButton.onclick = function() {
+        document.body.removeChild(modalOverlay);
+    };
+    
+    // Assemble modal
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(okButton);
+    modalOverlay.appendChild(modalContent);
+    
+    // Add to document
+    document.body.appendChild(modalOverlay);
+}
+
+function checkSubscriptionValidity() {
+    // Check if there's any debt
+    if (SUBSCRIPTION_CONFIG.debtValue > 0) {
+        const debtMessage = `Your account has an outstanding balance of ${formatCurrency(SUBSCRIPTION_CONFIG.debtValue)}. Please settle your balance to continue using the service.`;
+          showToast(debtMessage, 'error');
+          showSubscriptionModal('Payment Required', debtMessage);
+          return { valid: false, reason: debtMessage };
+    }
+    
+    const today = new Date();
+    const subDate = new Date(SUBSCRIPTION_CONFIG.subscriptionDate);
+    const expiryDate = new Date(subDate);
+    expiryDate.setDate(subDate.getDate() + SUBSCRIPTION_CONFIG.durationDays);
+    
+    // Check if subscription has expired
+    if (today > expiryDate) {
+        const expiryMessage = `Your subscription expired on ${expiryDate.toLocaleDateString()}. Please renew to continue using the service.`;
+        showToast(expiryMessage, 'error');
+        showSubscriptionModal('Subscription Expired', expiryMessage);
+        return { 
+            valid: false, 
+            reason: expiryMessage
+        };
+    }
+    
+    return { valid: true };
+}
+
 function openDatabase() {
     return new Promise((resolve, reject) => {
+        // First check subscription validity
+        const subscriptionCheck = checkSubscriptionValidity();
+        if (!subscriptionCheck.valid) {
+            reject(new Error('Subscription validation failed: ' + subscriptionCheck.reason));
+            return;
+        }
+        
         const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
         
         request.onupgradeneeded = function(event) {
@@ -122,6 +243,34 @@ function openDatabase() {
 
 function executeTransaction(db, storeNames, mode, operation) {
     return new Promise((resolve, reject) => {
+        // Check subscription validity before each transaction
+        const subscriptionCheck = checkSubscriptionValidity();
+        if (!subscriptionCheck.valid) {
+            reject(new Error(subscriptionCheck.reason));
+            return;
+        }
+        
+        const transaction = db.transaction(storeNames, mode);
+        
+        transaction.oncomplete = function() { resolve(); };
+        transaction.onerror = function(event) {
+            console.error('Transaction error:', event.target.error);
+            reject(event.target.error);
+        };
+        
+        operation(transaction);
+    });
+}
+
+function executeTransaction(db, storeNames, mode, operation) {
+    return new Promise((resolve, reject) => {
+        // Check subscription validity before each transaction
+        const subscriptionCheck = checkSubscriptionValidity();
+        if (!subscriptionCheck.valid) {
+            reject(new Error('Subscription validation failed: ' + subscriptionCheck.reason));
+            return;
+        }
+        
         const transaction = db.transaction(storeNames, mode);
         
         transaction.oncomplete = function() { resolve(); };
@@ -246,8 +395,9 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
-// Make DB functions globally available
+// Make DB functions and config globally available
 window.DB_CONFIG = DB_CONFIG;
+window.SUBSCRIPTION_CONFIG = SUBSCRIPTION_CONFIG;
 window.openDatabase = openDatabase;
 window.executeTransaction = executeTransaction;
 window.addRecord = addRecord;
@@ -259,3 +409,5 @@ window.clearStore = clearStore;
 window.generateId = generateId;
 window.genFormatDate = genFormatDate;
 window.formatCurrency = formatCurrency;
+window.checkSubscriptionValidity = checkSubscriptionValidity;
+window.showSubscriptionModal = showSubscriptionModal;
