@@ -1,0 +1,3353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Auditing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Enhanced Auditing Styles */
+        .audit-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .audit-summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .audit-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audit-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .audit-card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            z-index: 1;
+        }
+
+        .audit-card-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+            z-index: 1;
+        }
+
+        .audit-card-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            z-index: 1;
+        }
+
+        .audit-card-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .audit-actions-section {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .audit-in-progress-banner {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+        }
+
+        .audit-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .audit-search-section {
+            margin-bottom: 20px;
+        }
+
+        .audit-status-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--table-header-bg);
+            padding: 10px;
+            border-radius: var(--radius-md);
+        }
+
+        .audit-status-tab {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .audit-status-tab:hover {
+            background: var(--primary-light);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .audit-status-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .audit-products-list {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+            padding: 15px;
+            min-height: 200px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .audit-product-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+        }
+
+        .audit-product-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .audit-product-item:hover {
+            background: var(--table-hover-bg);
+            transform: translateX(5px);
+        }
+
+        .audit-product-item.audit-completed {
+            opacity: 0.7;
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .audit-product-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .audit-product-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .audit-product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .audit-product-name {
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .audit-product-name i {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .audit-product-details {
+            display: flex;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+        }
+
+        .audit-product-id {
+            font-family: monospace;
+            background: var(--table-header-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .audit-product-category {
+            background: var(--info);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .audit-product-stock {
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .audit-product-stock-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .audit-product-stock-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .audit-product-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .audit-action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+
+        .audit-action-btn.approve {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+        }
+
+        .audit-action-btn.approve:hover:not(:disabled) {
+            background: #28a745;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+        }
+
+        .audit-action-btn.review {
+            background: var(--warning);
+            color: var(--dark);
+            box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+        }
+
+        .audit-action-btn.review:hover:not(:disabled) {
+            background: #e0a800;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+        }
+
+        .audit-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Enhanced Progress Bar */
+        .audit-progress-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+        }
+
+        .audit-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .audit-progress-bar {
+            height: 20px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .audit-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, 
+                var(--danger) 0%, 
+                var(--warning) 33%, 
+                var(--info) 66%, 
+                var(--success) 100%);
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .audit-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255,255,255,0.2) 50%, 
+                transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .audit-progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .audit-progress-percentage {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+
+        .audit-no-products {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .audit-no-products i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .audit-no-products h4 {
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .audit-batch-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        /* Modal Enhancements */
+        .audit-modal .modal-content {
+            max-width: 900px;
+            max-height: 90vh;
+            padding: 20px;
+        }
+
+        .modal-audit-products {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 15px;
+            background: var(--table-header-bg);
+        }
+
+        .batch-select-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            z-index: 10;
+            padding: 10px;
+            border-radius: var(--radius-md);
+        }
+
+        .select-all-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .audit-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: var(--table-header-bg);
+            border-radius: var(--radius-md);
+            padding: 15px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .audit-details-content {
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .audit-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .audit-details-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .info-item {
+            background: var(--table-header-bg);
+            padding: 10px 15px;
+            border-radius: var(--radius-md);
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .export-btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .export-pdf {
+            background: var(--danger);
+            color: white;
+        }
+
+        .export-pdf:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        /* Scope Options */
+        .scope-options-container {
+            background: var(--table-header-bg);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            margin: 15px 0;
+        }
+
+        .scope-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .scope-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scope-checkbox-item:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        .scope-checkbox-item input[type="checkbox"] {
+            accent-color: var(--primary);
+        }
+
+        /* Product Status Indicators */
+        .product-status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-indicator-pending {
+            background: var(--info);
+            box-shadow: 0 0 8px var(--info);
+        }
+
+        .status-indicator-review {
+            background: var(--warning);
+            box-shadow: 0 0 8px var(--warning);
+        }
+
+        .status-indicator-approved {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Warning Messages */
+        .audit-warning {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1) 0%, rgba(243, 156, 18, 0.2) 100%);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .audit-warning i {
+            font-size: 1.2rem;
+        }
+
+        /* Selection Feedback */
+        .selection-feedback {
+            padding: 10px 15px;
+            border-radius: var(--radius-md);
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .selection-feedback.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .selection-feedback.success {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        /* Loading Animation */
+        .loading-skeleton {
+            background: linear-gradient(90deg, var(--border-color) 25%, var(--table-header-bg) 50%, var(--border-color) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: var(--radius-md);
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Short/Over Indicator */
+        .short-over-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
+        .short-over-short {
+            background: rgba(220, 53, 69, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .short-over-over {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        /* Short/Over Modal Styles */
+        .short-over-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .short-over-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .short-over-form label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        /* Loading Spinner Styles */
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @media (max-width: 768px) {
+            .audit-product-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .audit-product-actions {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .audit-status-tabs {
+                flex-direction: column;
+            }
+
+            .audit-filters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="app-container">
+        <!-- Header and sidebar injected by header-sidebar.js -->
+        
+        <main class="main-content">
+            <div class="page-header">
+                <h1><i class="fas fa-clipboard-check"></i> Inventory Auditing</h1>
+                <div class="header-actions">
+                    <button id="new-audit-btn" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> New Audit
+                    </button>
+                    <button id="refresh-audit-btn" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="audit-container">
+                <!-- Audit Summary Cards -->
+                <div class="audit-summary-cards">
+                    <div class="audit-card">
+                        <div class="audit-card-icon text-primary">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="audit-card-value" id="total-audits">0</div>
+                        <div class="audit-card-label">Total Audits</div>
+                        <div class="audit-card-badge badge-primary">All Time</div>
+                    </div>
+                    
+                    <div class="audit-card">
+                        <div class="audit-card-icon text-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="audit-card-value" id="approved-products">0</div>
+                        <div class="audit-card-label">Approved Products</div>
+                        <div class="audit-card-badge badge-success">Verified</div>
+                    </div>
+                    
+                    <div class="audit-card">
+                        <div class="audit-card-icon text-warning">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="audit-card-value" id="review-products">0</div>
+                        <div class="audit-card-label">Needs Review</div>
+                        <div class="audit-card-badge badge-warning">Attention</div>
+                    </div>
+                    
+                    <div class="audit-card">
+                        <div class="audit-card-icon text-info">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="audit-card-value" id="pending-products">0</div>
+                        <div class="audit-card-label">Pending Review</div>
+                        <div class="audit-card-badge badge-info">Awaiting</div>
+                    </div>
+                </div>
+
+                <!-- Current Audit Section -->
+                <div class="audit-actions-section" id="current-audit-section" style="display: none;">
+                    <div class="audit-in-progress-banner">
+                        <div>
+                            <h3><i class="fas fa-spinner fa-spin"></i> Audit in Progress</h3>
+                            <p id="current-audit-title">Loading...</p>
+                        </div>
+                        <button class="btn btn-light" id="view-audit-details-btn" style="color: black;">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
+                    </div>
+                    
+                    <!-- Enhanced Progress Bar -->
+                    <div class="audit-progress-container">
+                        <div class="audit-progress-header">
+                            <h4>Audit Progress</h4>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                        <div class="audit-progress-bar">
+                            <div class="audit-progress-fill" id="audit-progress-fill" style="width: 0%"></div>
+                            <div class="audit-progress-percentage" id="progress-percentage-text">0%</div>
+                        </div>
+                        <div class="audit-progress-stats">
+                            <span><i class="fas fa-check-circle text-success"></i> <span id="current-approved">0</span> Approved</span>
+                            <span><i class="fas fa-eye text-warning"></i> <span id="current-review">0</span> Needs Review</span>
+                            <span><i class="fas fa-clock text-info"></i> <span id="current-pending">0</span> Pending</span>
+                            <span><i class="fas fa-boxes text-primary"></i> <span id="current-total">0</span> Total</span>
+                        </div>
+                    </div>
+                    
+                    <div class="audit-filters">
+                        <div class="form-group">
+                            <label for="filter-category-audit"><i class="fas fa-tags"></i> Filter by Category</label>
+                            <select id="filter-category-audit" class="form-control">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="filter-status-audit"><i class="fas fa-box"></i> Filter by Stock Status</label>
+                            <select id="filter-status-audit" class="form-control">
+                                <option value="">All Statuses</option>
+                                <option value="in_stock">In Stock</option>
+                                <option value="low_stock">Low Stock</option>
+                                <option value="out_of_stock">Out of Stock</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-sort-amount-up"></i> Stock Range</label>
+                            <div class="input-group">
+                                <input type="number" id="filter-stock-min-audit" class="form-control" placeholder="Min" min="0">
+                                <input type="number" id="filter-stock-max-audit" class="form-control" placeholder="Max" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Warning message for pending products -->
+                    <div class="audit-warning" id="pending-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Pending Products Detected</strong>
+                            <p>You cannot complete this audit until all products are either "Approved" or "Needs Review".</p>
+                        </div>
+                    </div>
+                    
+                    <div class="audit-status-tabs">
+                        <button class="audit-status-tab active" data-status="pending">
+                            <i class="fas fa-clock"></i> Pending Review (<span id="pending-count">0</span>)
+                        </button>
+                        <button class="audit-status-tab" data-status="review">
+                            <i class="fas fa-eye"></i> Needs Review (<span id="review-count">0</span>)
+                        </button>
+                        <button class="audit-status-tab" data-status="approved">
+                            <i class="fas fa-check-circle"></i> Approved (<span id="approved-count">0</span>)
+                        </button>
+                    </div>
+                    
+                    <div class="audit-products-list" id="audit-products-list">
+                        <div class="audit-no-products">
+                            <i class="fas fa-clipboard-check"></i>
+                            <h4>No Products Found</h4>
+                            <p>Select a different status or adjust your filters.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="audit-batch-actions" id="batch-actions" style="display: none;">
+                        <button class="btn btn-success" id="batch-approve-btn">
+                            <i class="fas fa-check"></i> Approve Selected
+                        </button>
+                        <button class="btn btn-warning" id="batch-review-btn">
+                            <i class="fas fa-eye"></i> Mark for Review
+                        </button>
+                        <button class="btn btn-secondary" id="batch-clear-btn">
+                            <i class="fas fa-times"></i> Clear Selection
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Audit Modal -->
+    <div id="new-audit-modal" class="modal audit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-check"></i> Create New Audit</h2>
+                <button class="close-modal" id="close-new-audit-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="new-audit-form">
+                    <div class="form-group">
+                        <label for="audit-title"><i class="fas fa-heading"></i> Audit Title *</label>
+                        <input type="text" id="audit-title" class="form-control" placeholder="e.g., Monthly Inventory Audit - March 2024" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="audit-assigned-to"><i class="fas fa-user-tie"></i> Assigned To (Sales Manager) *</label>
+                        <select id="audit-assigned-to" class="form-control" required>
+                            <option value="">Select Sales Manager</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="audit-notes"><i class="fas fa-sticky-note"></i> Notes</label>
+                        <textarea id="audit-notes" class="form-control" rows="3" placeholder="Add any notes about this audit..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="audit-date"><i class="fas fa-calendar"></i> Audit Date *</label>
+                        <input type="date" id="audit-date" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="audit-scope"><i class="fas fa-filter"></i> Scope</label>
+                        <select id="audit-scope" class="form-control">
+                            <option value="all">All Products</option>
+                            <option value="category">Specific Categories</option>
+                            <option value="stock">Specific Stock Levels</option>
+                            <option value="status">Specific Stock Status</option>
+                        </select>
+                    </div>
+                    
+                    <div id="audit-scope-options" class="scope-options-container" style="display: none;">
+                        <!-- Dynamic scope options will be added here -->
+                    </div>
+                    
+                    <!-- Selection feedback -->
+                    <div class="selection-feedback error" id="selection-feedback" style="display: none;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Please select at least one product to create an audit</span>
+                    </div>
+                    
+                    <div class="modal-audit-products" id="modal-audit-products">
+                        <div class="batch-select-actions">
+                            <div class="select-all-checkbox">
+                                <input type="checkbox" id="select-all-products">
+                                <label for="select-all-products"><i class="fas fa-check-double"></i> Select All Products</label>
+                            </div>
+                            <span id="selected-count" class="badge badge-primary">0 products selected</span>
+                        </div>
+                        <!-- Products for selection will be loaded here -->
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-new-audit">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="create-audit-btn" disabled>
+                            <i class="fas fa-play-circle"></i> Start Audit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Details Modal -->
+    <div id="audit-details-modal" class="modal audit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Audit Details</h2>
+                <button class="close-modal" id="close-audit-details-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="audit-details-content" id="audit-details-content">
+                    <!-- Audit details will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="export-options" id="export-options" style="display: none;">
+                    <button class="export-btn export-pdf" id="export-pdf-btn">
+                        <i class="fas fa-file-pdf"></i> Export as PDF
+                    </button>
+                </div>
+                <button type="button" class="btn btn-secondary" id="close-audit-details-btn">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button type="button" class="btn btn-warning" id="edit-audit-btn" style="display: none;">
+                    <i class="fas fa-edit"></i> Edit Audit
+                </button>
+                <button type="button" class="btn btn-success" id="complete-audit-btn" style="display: none;">
+                    <i class="fas fa-check-circle"></i> Complete Audit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Audit Modal -->
+    <div id="edit-audit-modal" class="modal audit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Audit</h2>
+                <button class="close-modal" id="close-edit-audit-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-audit-form">
+                    <div class="form-group">
+                        <label for="edit-audit-title">Audit Title *</label>
+                        <input type="text" id="edit-audit-title" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-audit-assigned-to">Assigned To (Sales Manager) *</label>
+                        <select id="edit-audit-assigned-to" class="form-control" required>
+                            <option value="">Select Sales Manager</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-audit-notes">Notes</label>
+                        <textarea id="edit-audit-notes" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-edit-audit">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="save-audit-changes-btn">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Short/Over Modal -->
+    <div id="short-over-modal" class="modal short-over-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-balance-scale"></i> Short/Over Details</h2>
+                <button class="close-modal" id="close-short-over-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="short-over-form" class="short-over-form">
+                    <input type="hidden" id="short-over-product-id">
+                    <input type="hidden" id="short-over-product-name">
+                    
+                    <div class="form-group">
+                        <label for="short-over-type"><i class="fas fa-exchange-alt"></i> Type *</label>
+                        <select id="short-over-type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="short">Short (Missing Stock)</option>
+                            <option value="over">Over (Excess Stock)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="short-over-quantity"><i class="fas fa-box"></i> Quantity *</label>
+                        <input type="number" id="short-over-quantity" class="form-control" min="0" required>
+                        <small class="text-muted">Enter the quantity difference</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="short-over-notes"><i class="fas fa-sticky-note"></i> Notes</label>
+                        <textarea id="short-over-notes" class="form-control" rows="3" placeholder="Explain the reason for short/over..."></textarea>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-short-over">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="save-short-over">
+                            <i class="fas fa-save"></i> Save Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- General@@@-->
+    <div class="gen"></div>
+  
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <!-- JavaScript Imports -->
+    <script src="js/db.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/header-sidebar.js"></script>
+
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+    // Audit Manager Class
+    function AuditManager() {
+        this.currentUser = null;
+        this.currentAudit = null;
+        this.allProducts = [];
+        this.filteredProducts = [];
+        this.categories = [];
+        this.auditRecords = [];
+        this.salesManagers = [];
+        this.currentStatus = 'pending'; // pending, review, approved
+        this.selectedProducts = new Set();
+        this.realtimeListeners = [];
+        this.currentAuditProducts = [];
+        this.editingAuditId = null;
+        this.modalSelectedProducts = new Set();
+        this.scopeFilter = null;
+        this.shortOverData = {}; // Store short/over data by product id
+    }
+
+    AuditManager.prototype = {
+        initialize: async function() {
+            try {
+                LoadingManager.showPageLoading();
+                
+                // Check authentication and permissions
+                await this.checkPermissions();
+                
+                // Get current user
+                this.currentUser = await this.getCurrentUser();
+                
+                // Set up event listeners
+                this.setupEventListeners();
+                
+                // Load initial data
+                await this.loadInitialData();
+                
+                // Set up real-time listeners
+                this.setupRealtimeListeners();
+                
+                // Set default date in form
+                this.setDefaultDate();
+                
+                showToast('Audit system ready', 'success');
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Failed to initialize audit system: ' + error.message, 'error');
+            } finally {
+                LoadingManager.hidePageLoading();
+            }
+        },
+
+        setDefaultDate: function() {
+            // Set today's date in the form
+            const today = new Date().toISOString().split('T')[0];
+            const auditDateInput = document.getElementById('audit-date');
+            if (auditDateInput) {
+                auditDateInput.value = today;
+                auditDateInput.min = today; // Can't select past dates
+            }
+        },
+
+        checkPermissions: async function() {
+            try {
+                const hasPermission = await this.hasAuditPermission();
+                if (!hasPermission) {
+                    showToast('You do not have permission to access audit management', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                    throw new Error('Insufficient permissions');
+                }
+            } catch (error) {
+                throw error;
+            }
+        },
+
+        hasAuditPermission: async function() {
+            return new Promise((resolve, reject) => {
+                auth.onAuthStateChanged(async (user) => {
+                    if (!user) {
+                        resolve(false);
+                        return;
+                    }
+                    
+                    try {
+                        const doc = await db.collection('users').doc(user.uid).get();
+                        if (doc.exists) {
+                            const userData = doc.data();
+                            const allowedRoles = ['admin', 'manager', 'ceo', 'sales manager'];
+                            resolve(allowedRoles.includes(userData.role));
+                        } else {
+                            resolve(false);
+                        }
+                    } catch (error) {
+                        console.error('Error checking permissions:', error);
+                        resolve(false);
+                    }
+                });
+            });
+        },
+
+        getCurrentUser: function() {
+            return new Promise((resolve) => {
+                auth.onAuthStateChanged(async (user) => {
+                    if (!user) {
+                        resolve(null);
+                        return;
+                    }
+                    
+                    try {
+                        const doc = await db.collection('users').doc(user.uid).get();
+                        if (doc.exists) {
+                            resolve({ uid: user.uid, ...doc.data() });
+                        } else {
+                            resolve({ uid: user.uid, name: user.displayName || 'Unknown User' });
+                        }
+                    } catch (error) {
+                        console.error('Error getting user:', error);
+                        resolve({ uid: user.uid, name: user.displayName || 'Unknown User' });
+                    }
+                });
+            });
+        },
+
+        setupEventListeners: function() {
+            var self = this;
+            
+            // New audit button
+            document.getElementById('new-audit-btn').addEventListener('click', function() {
+                self.openNewAuditModal();
+            });
+            
+            // Refresh button
+            document.getElementById('refresh-audit-btn').addEventListener('click', function() {
+                self.refreshData();
+            });
+            
+            // View audit details button
+            document.getElementById('view-audit-details-btn').addEventListener('click', function() {
+                if (self.currentAudit) {
+                    self.viewAuditDetails(self.currentAudit.id);
+                }
+            });
+            
+            // Status tabs - Fixed: Add event listeners dynamically when tabs are created
+            // We'll handle this in loadAuditProducts method
+            
+            // Filter changes for current audit
+            document.getElementById('filter-category-audit').addEventListener('change', function() {
+                self.applyFilters();
+            });
+            
+            document.getElementById('filter-status-audit').addEventListener('change', function() {
+                self.applyFilters();
+            });
+            
+            document.getElementById('filter-stock-min-audit').addEventListener('input', function() {
+                self.applyFilters();
+            });
+            
+            document.getElementById('filter-stock-max-audit').addEventListener('input', function() {
+                self.applyFilters();
+            });
+            
+            // New audit modal
+            document.getElementById('close-new-audit-modal').addEventListener('click', function() {
+                self.closeModal('new-audit-modal');
+            });
+            
+            document.getElementById('cancel-new-audit').addEventListener('click', function() {
+                self.closeModal('new-audit-modal');
+            });
+            
+            document.getElementById('new-audit-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                self.createNewAudit();
+            });
+            
+            // Audit scope change
+            document.getElementById('audit-scope').addEventListener('change', function() {
+                self.handleScopeChange(this.value);
+            });
+            
+            // Select all products
+            document.getElementById('select-all-products').addEventListener('change', function(e) {
+                self.toggleSelectAllProducts(e.target.checked);
+            });
+            
+            // Batch actions
+            document.getElementById('batch-approve-btn').addEventListener('click', function() {
+                self.batchUpdateStatus('approved');
+            });
+            
+            document.getElementById('batch-review-btn').addEventListener('click', function() {
+                self.batchUpdateStatus('review');
+            });
+            
+            document.getElementById('batch-clear-btn').addEventListener('click', function() {
+                self.clearSelection();
+            });
+            
+            // Audit details modal
+            document.getElementById('close-audit-details-modal').addEventListener('click', function() {
+                self.closeModal('audit-details-modal');
+            });
+            
+            document.getElementById('close-audit-details-btn').addEventListener('click', function() {
+                self.closeModal('audit-details-modal');
+            });
+            
+            document.getElementById('edit-audit-btn').addEventListener('click', function() {
+                if (self.editingAuditId) {
+                    self.openEditAuditModal(self.editingAuditId);
+                }
+            });
+            
+            document.getElementById('complete-audit-btn').addEventListener('click', function() {
+                if (self.editingAuditId) {
+                    self.completeAudit(self.editingAuditId);
+                }
+            });
+            
+            document.getElementById('export-pdf-btn').addEventListener('click', function() {
+                if (self.editingAuditId) {
+                    self.exportAuditAsPDF(self.editingAuditId);
+                }
+            });
+            
+            // Edit audit modal
+            document.getElementById('close-edit-audit-modal').addEventListener('click', function() {
+                self.closeModal('edit-audit-modal');
+            });
+            
+            document.getElementById('cancel-edit-audit').addEventListener('click', function() {
+                self.closeModal('edit-audit-modal');
+            });
+            
+            document.getElementById('edit-audit-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                self.saveAuditChanges();
+            });
+            
+            // Short/Over modal
+            document.getElementById('close-short-over-modal').addEventListener('click', function() {
+                self.closeModal('short-over-modal');
+            });
+            
+            document.getElementById('cancel-short-over').addEventListener('click', function() {
+                self.closeModal('short-over-modal');
+            });
+            
+            document.getElementById('short-over-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                self.saveShortOverDetails();
+            });
+            
+            // Close modals when clicking outside
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    self.closeModal(e.target.id);
+                }
+            });
+            
+            // Close modals with escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const modals = document.querySelectorAll('.modal');
+                    modals.forEach(modal => {
+                        if (modal.style.display === 'block') {
+                            self.closeModal(modal.id);
+                        }
+                    });
+                }
+            });
+        },
+
+        loadInitialData: async function() {
+            try {
+                // Load all data in parallel
+                const [products, categories, auditRecords, salesManagers] = await Promise.all([
+                    this.getAllProducts(),
+                    this.getAllCategories(),
+                    this.getAuditRecords(),
+                    this.getSalesManagers()
+                ]);
+                
+                this.allProducts = products;
+                this.categories = categories;
+                this.auditRecords = auditRecords;
+                this.salesManagers = salesManagers;
+                
+                // Update summary cards - Now using current in-progress audit only
+                this.updateSummaryCards();
+                
+                // Populate category filters
+                this.populateCategoryFilters();
+                
+                // Load current active audit if any
+                await this.loadCurrentAudit();
+                
+                // Load sales managers dropdown
+                this.loadSalesManagersDropdown();
+                
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                throw error;
+            }
+        },
+
+        getSalesManagers: async function() {
+            try {
+                const snapshot = await db.collection('users').get();
+                const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+                
+                // Filter users with "sales manager" role
+                return users.filter(user => user.role === 'sales manager');
+            } catch (error) {
+                console.error('Error getting sales managers:', error);
+                return [];
+            }
+        },
+
+        loadSalesManagersDropdown: function() {
+            const select = document.getElementById('audit-assigned-to');
+            const editSelect = document.getElementById('edit-audit-assigned-to');
+            
+            if (!select) return;
+            
+            // Clear existing options
+            select.innerHTML = '<option value="">Select Sales Manager *</option>';
+            if (editSelect) {
+                editSelect.innerHTML = '<option value="">Select Sales Manager</option>';
+            }
+            
+            // Add sales managers
+            this.salesManagers.forEach(manager => {
+                const option = document.createElement('option');
+                option.value = manager.uid;
+                option.textContent = `${manager.fullName} (${manager.email || 'No email'})`;
+                select.appendChild(option);
+                
+                if (editSelect) {
+                    const editOption = option.cloneNode(true);
+                    editSelect.appendChild(editOption);
+                }
+            });
+        },
+
+        getAllProducts: async function() {
+            try {
+                const snapshot = await db.collection('database').doc('inventory').collection('products').get();
+                return snapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    auditStatus: doc.data().auditStatus || 'pending' // Default to pending
+                }));
+            } catch (error) {
+                console.error('Error getting products:', error);
+                return [];
+            }
+        },
+
+        getAllCategories: async function() {
+            try {
+                const snapshot = await db.collection('database').doc('inventory').collection('categories').get();
+                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error('Error getting categories:', error);
+                return [];
+            }
+        },
+
+        getAuditRecords: async function() {
+            try {
+                // Get all audit records from database -> inventory -> auditRecords
+                const snapshot = await db.collection('database').doc('inventory').collection('auditRecords').get();
+                const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Sort locally by createdAt in descending order
+                return records.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                    return dateB - dateA;
+                });
+            } catch (error) {
+                console.error('Error getting audit records:', error);
+                return [];
+            }
+        },
+
+        updateSummaryCards: function() {
+            // Find current in-progress audit
+            const currentAudit = this.auditRecords.find(a => a.status === 'in_progress');
+            
+            if (currentAudit) {
+                // Get audit stats from the audit record itself (using saved values in Firestore)
+                const approvedCount = currentAudit.approvedCount || 0;
+                const reviewCount = currentAudit.reviewCount || 0;
+                const pendingCount = currentAudit.pendingCount || currentAudit.totalProducts || 0;
+                
+                // Update summary cards with current audit data
+                document.getElementById('total-audits').textContent = this.auditRecords.filter(a => a.status === 'in_progress').length;
+                document.getElementById('approved-products').textContent = approvedCount;
+                document.getElementById('review-products').textContent = reviewCount;
+                document.getElementById('pending-products').textContent = pendingCount;
+            } else {
+                // No active audit
+                document.getElementById('total-audits').textContent = this.auditRecords.filter(a => a.status === 'in_progress').length;
+                document.getElementById('approved-products').textContent = 0;
+                document.getElementById('review-products').textContent = 0;
+                document.getElementById('pending-products').textContent = 0;
+            }
+        },
+
+        populateCategoryFilters: function() {
+            const filter = document.getElementById('filter-category-audit');
+            
+            if (!filter) return;
+            
+            filter.innerHTML = '<option value="">All Categories</option>';
+            this.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                filter.appendChild(option);
+            });
+        },
+
+        loadCurrentAudit: async function() {
+            try {
+                // Get all audits and filter locally to avoid index requirements
+                const allAudits = await this.getAuditRecords();
+                
+                // Find the most recent active audit
+                const activeAudits = allAudits.filter(a => a.status === 'in_progress');
+                
+                if (activeAudits.length > 0) {
+                    // Sort by createdAt locally to get the most recent
+                    activeAudits.sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                        return dateB - dateA;
+                    });
+                    
+                    this.currentAudit = activeAudits[0];
+                    this.scopeFilter = this.currentAudit.scope || 'all';
+                    this.shortOverData = this.currentAudit.shortOverData || {};
+                    this.showCurrentAudit();
+                    
+                    // Update current audit stats from saved values
+                    this.updateCurrentAuditStats();
+                    
+                    // Load products for current audit
+                    this.loadAuditProducts();
+                } else {
+                    this.hideCurrentAudit();
+                }
+            } catch (error) {
+                console.error('Error loading current audit:', error);
+                this.hideCurrentAudit();
+            }
+        },
+
+        showCurrentAudit: function() {
+            const section = document.getElementById('current-audit-section');
+            if (section) {
+                section.style.display = 'block';
+            }
+            
+            // Update audit title
+            const titleElement = document.getElementById('current-audit-title');
+            if (titleElement && this.currentAudit) {
+                titleElement.textContent = this.currentAudit.title;
+            }
+        },
+
+        hideCurrentAudit: function() {
+            const section = document.getElementById('current-audit-section');
+            if (section) {
+                section.style.display = 'none';
+            }
+        },
+
+        updateCurrentAuditStats: function() {
+            if (!this.currentAudit) return;
+            
+            // Use saved values from Firestore audit record
+            const approvedCount = this.currentAudit.approvedCount || 0;
+            const reviewCount = this.currentAudit.reviewCount || 0;
+            const pendingCount = this.currentAudit.pendingCount || 0;
+            const totalCount = this.currentAudit.totalProducts || 0;
+            const reviewedCount = reviewCount + approvedCount;
+            const progressPercent = totalCount > 0 ? Math.round((reviewedCount / totalCount) * 100) : 0;
+            
+            // Safely update DOM elements
+            this.updateElementText('current-total', totalCount);
+            this.updateElementText('current-reviewed', reviewedCount);
+            this.updateElementText('current-pending', pendingCount);
+            this.updateElementText('current-approved', approvedCount);
+            this.updateElementText('current-review', reviewCount);
+            
+            // Update progress bar and percentage
+            const progressFill = document.getElementById('audit-progress-fill');
+            const progressPercentage = document.getElementById('progress-percentage');
+            const progressPercentageText = document.getElementById('progress-percentage-text');
+            
+            if (progressFill) {
+                progressFill.style.width = `${progressPercent}%`;
+            }
+            if (progressPercentage) {
+                progressPercentage.textContent = `${progressPercent}%`;
+            }
+            if (progressPercentageText) {
+                progressPercentageText.textContent = `${progressPercent}%`;
+            }
+            
+            // Update tab counts
+            this.updateElementText('pending-count', pendingCount);
+            this.updateElementText('review-count', reviewCount);
+            this.updateElementText('approved-count', approvedCount);
+            
+            // Show/hide warning for pending products
+            const warningElement = document.getElementById('pending-warning');
+            const completeBtn = document.getElementById('complete-audit-btn');
+            if (pendingCount > 0) {
+                if (warningElement) warningElement.style.display = 'flex';
+                if (completeBtn) completeBtn.disabled = true;
+            } else {
+                if (warningElement) warningElement.style.display = 'none';
+                if (completeBtn) completeBtn.disabled = false;
+            }
+            
+            // Update summary cards as well
+            this.updateSummaryCards();
+        },
+
+        updateElementText: function(elementId, text) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = text;
+            }
+        },
+
+        applyScopeFilter: function(products, audit) {
+            if (!audit || audit.scope === 'all') {
+                return products;
+            }
+            
+            switch(audit.scope) {
+                case 'category':
+                    if (audit.categories && audit.categories.length > 0) {
+                        return products.filter(p => audit.categories.includes(p.category));
+                    }
+                    break;
+                    
+                case 'stock':
+                    const minStock = parseInt(audit.stockMin) || 0;
+                    const maxStock = parseInt(audit.stockMax) || Infinity;
+                    return products.filter(p => {
+                        const stock = p.stock || 0;
+                        return stock >= minStock && stock <= maxStock;
+                    });
+                    
+                case 'status':
+                    if (audit.stockStatuses && audit.stockStatuses.length > 0) {
+                        return products.filter(p => {
+                            const stockStatus = this.getStockStatus(p);
+                            return audit.stockStatuses.includes(stockStatus);
+                        });
+                    }
+                    break;
+            }
+            
+            return products;
+        },
+
+        loadAuditProducts: function() {
+            if (!this.currentAudit) return;
+            
+            // Get product IDs for this audit
+            const auditProductIds = this.currentAudit.selectedProducts ? 
+                this.currentAudit.selectedProducts.map(p => p.id) : [];
+            
+            // Get all products that are in this audit
+            const allAuditProducts = this.allProducts.filter(p => auditProductIds.includes(p.id));
+            
+            // Apply scope filter if not 'all'
+            this.currentAuditProducts = allAuditProducts;
+            if (this.currentAudit.scope && this.currentAudit.scope !== 'all') {
+                this.currentAuditProducts = this.applyScopeFilter(allAuditProducts, this.currentAudit);
+            }
+            
+            // Filter products based on current status
+            this.filteredProducts = this.currentAuditProducts.filter(product => {
+                return product.auditStatus === this.currentStatus;
+            });
+            
+            // Apply additional filters from UI
+            this.applyFilters(true);
+            
+            // Fix: Add event listeners to status tabs after loading products
+            this.setupStatusTabListeners();
+        },
+
+        setupStatusTabListeners: function() {
+            var self = this;
+            
+            // Remove existing event listeners first
+            const tabs = document.querySelectorAll('.audit-status-tab');
+            tabs.forEach(tab => {
+                tab.replaceWith(tab.cloneNode(true));
+            });
+            
+            // Add new event listeners
+            document.querySelectorAll('.audit-status-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    const status = this.dataset.status;
+                    self.switchStatus(status);
+                });
+            });
+        },
+
+        switchStatus: function(status) {
+            this.currentStatus = status;
+            
+            // Update active tab
+            document.querySelectorAll('.audit-status-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.status === status) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Clear selection
+            this.clearSelection();
+            
+            // Load products for this status
+            if (!this.currentAudit) return;
+            
+            // Get product IDs for this audit
+            const auditProductIds = this.currentAudit.selectedProducts ? 
+                this.currentAudit.selectedProducts.map(p => p.id) : [];
+            
+            // Get all products that are in this audit
+            const allAuditProducts = this.allProducts.filter(p => auditProductIds.includes(p.id));
+            
+            // Apply scope filter if not 'all'
+            this.currentAuditProducts = allAuditProducts;
+            if (this.currentAudit.scope && this.currentAudit.scope !== 'all') {
+                this.currentAuditProducts = this.applyScopeFilter(allAuditProducts, this.currentAudit);
+            }
+            
+            // Filter products based on current status
+            this.filteredProducts = this.currentAuditProducts.filter(product => {
+                return product.auditStatus === this.currentStatus;
+            });
+            
+            // Render the filtered products
+            this.renderAuditProducts();
+        },
+
+        applyFilters: function(fromLoad = false) {
+            if (!this.currentAudit) return;
+            
+            if (!fromLoad) {
+                // Get filter values
+                const categoryFilter = document.getElementById('filter-category-audit')?.value || '';
+                const statusFilter = document.getElementById('filter-status-audit')?.value || '';
+                const stockMin = parseInt(document.getElementById('filter-stock-min-audit')?.value) || 0;
+                const stockMax = parseInt(document.getElementById('filter-stock-max-audit')?.value) || Infinity;
+                
+                // Filter products
+                let filtered = this.currentAuditProducts.filter(product => {
+                    // Status filter
+                    if (product.auditStatus !== this.currentStatus) return false;
+                    
+                    // Category filter
+                    if (categoryFilter && product.category !== categoryFilter) return false;
+                    
+                    // Stock status filter
+                    if (statusFilter) {
+                        const stockStatus = this.getStockStatus(product);
+                        if (stockStatus !== statusFilter) return false;
+                    }
+                    
+                    // Stock range filter
+                    const stock = product.stock || 0;
+                    if (stock < stockMin || stock > stockMax) return false;
+                    
+                    return true;
+                });
+                
+                this.filteredProducts = filtered;
+            }
+            
+            // Render the filtered products
+            this.renderAuditProducts();
+            
+            // Update batch actions visibility
+            this.updateBatchActionsVisibility();
+        },
+
+        getStockStatus: function(product) {
+            if (product.stock <= 0) {
+                return 'out_of_stock';
+            } else if (product.stock <= (product.lowStockThreshold || 5)) {
+                return 'low_stock';
+            }
+            return 'in_stock';
+        },
+
+        renderAuditProducts: function() {
+            const container = document.getElementById('audit-products-list');
+            if (!container) return;
+            
+            if (this.filteredProducts.length === 0) {
+                container.innerHTML = `
+                    <div class="audit-no-products">
+                        <i class="fas fa-clipboard-check"></i>
+                        <h4>No Products Found</h4>
+                        <p>No products with status "${this.currentStatus}" match your filters.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            this.filteredProducts.forEach(product => {
+                const category = this.categories.find(c => c.id === product.category) || { name: 'Uncategorized' };
+                const stockStatus = this.getStockStatus(product);
+                const stockStatusClass = this.getStockStatusClass(stockStatus);
+                const isSelected = this.selectedProducts.has(product.id);
+                const statusIndicator = this.getStatusIndicator(product.auditStatus);
+                const shortOverInfo = this.shortOverData[product.id];
+                
+                // Determine which action buttons to show based on current status
+                // REMOVED: Pending button - products assigned to review cannot go back to pending
+                const showApproveBtn = product.auditStatus !== 'approved';
+                const showReviewBtn = product.auditStatus === 'pending'; // Only show review button for pending products
+                
+                // Checkbox only enabled for pending products
+                const checkboxDisabled = product.auditStatus !== 'pending';
+                
+                // Short/Over indicator
+                let shortOverIndicator = '';
+                if (shortOverInfo) {
+                    const shortOverClass = shortOverInfo.type === 'short' ? 'short-over-short' : 'short-over-over';
+                    const shortOverIcon = shortOverInfo.type === 'short' ? 'fa-minus-circle' : 'fa-plus-circle';
+                    shortOverIndicator = `
+                        <span class="short-over-indicator ${shortOverClass}">
+                            <i class="fas ${shortOverIcon}"></i>
+                            ${shortOverInfo.type.toUpperCase()}: ${shortOverInfo.quantity}
+                        </span>
+                    `;
+                }
+                
+                html += `
+                    <div class="audit-product-item ${product.auditStatus === 'approved' ? 'audit-completed' : ''}" data-id="${product.id}">
+                        <input type="checkbox" class="audit-product-checkbox" 
+                               data-id="${product.id}" 
+                               ${isSelected ? 'checked' : ''}
+                               ${checkboxDisabled ? 'disabled' : ''}>
+                        
+                        <div class="audit-product-info">
+                            <div class="audit-product-name">
+                                ${statusIndicator}
+                                ${product.name}
+                                ${shortOverIndicator}
+                                ${product.auditStatus === 'approved' ? '<i class="fas fa-check-circle text-success"></i>' : ''}
+                                ${product.auditStatus === 'review' ? '<i class="fas fa-exclamation-circle text-warning"></i>' : ''}
+                            </div>
+                            <div class="audit-product-details">
+                                <span class="audit-product-id">${product.id}</span>
+                                <span class="audit-product-category">
+                                    <i class="fas fa-tag"></i> ${category.name}
+                                </span>
+                                <span class="audit-product-status ${stockStatusClass}">
+                                    <i class="fas fa-box"></i> ${this.formatStockStatus(stockStatus)}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="audit-product-stock">
+                            <div class="audit-product-stock-value">${product.stock || 0}</div>
+                            <div class="audit-product-stock-label">In Stock</div>
+                        </div>
+                        
+                        <div class="audit-product-actions">
+                            ${showApproveBtn ? `
+                                <button class="audit-action-btn approve" data-id="${product.id}" data-action="approved">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                            ` : ''}
+                            ${showReviewBtn ? `
+                                <button class="audit-action-btn review" data-id="${product.id}" data-action="review">
+                                    <i class="fas fa-eye"></i> Review
+                                </button>
+                            ` : ''}
+                            ${product.auditStatus === 'review' ? `
+                                <button class="audit-action-btn info short-over-btn" data-id="${product.id}" data-name="${product.name}" style="color:black;">
+                                    <i class="fas fa-balance-scale"></i> Short/Over
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Add event listeners
+            this.addProductEventListeners();
+        },
+
+        getStatusIndicator: function(status) {
+            switch(status) {
+                case 'approved': return '<span class="product-status-indicator status-indicator-approved"></span>';
+                case 'review': return '<span class="product-status-indicator status-indicator-review"></span>';
+                case 'pending': return '<span class="product-status-indicator status-indicator-pending"></span>';
+                default: return '<span class="product-status-indicator status-indicator-pending"></span>';
+            }
+        },
+
+        getStockStatusClass: function(status) {
+            switch(status) {
+                case 'in_stock': return 'status-in-stock';
+                case 'low_stock': return 'status-low-stock';
+                case 'out_of_stock': return 'status-out-of-stock';
+                default: return '';
+            }
+        },
+
+        formatStockStatus: function(status) {
+            switch(status) {
+                case 'in_stock': return 'In Stock';
+                case 'low_stock': return 'Low Stock';
+                case 'out_of_stock': return 'Out of Stock';
+                default: return status;
+            }
+        },
+
+        addProductEventListeners: function() {
+            var self = this;
+            
+            // Checkbox selection (only enabled for pending products)
+            document.querySelectorAll('.audit-product-checkbox:not(:disabled)').forEach(checkbox => {
+                checkbox.addEventListener('change', function(e) {
+                    const productId = this.dataset.id;
+                    if (this.checked) {
+                        self.selectedProducts.add(productId);
+                    } else {
+                        self.selectedProducts.delete(productId);
+                    }
+                    self.updateSelectedCount();
+                    self.updateBatchActionsVisibility();
+                });
+            });
+            
+            // Action buttons
+            document.querySelectorAll('.audit-action-btn').forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.stopPropagation();
+                    
+                    const productId = this.dataset.id;
+                    const action = this.dataset.action;
+                    
+                    // Handle Short/Over button
+                    if (this.classList.contains('short-over-btn')) {
+                        self.openShortOverModal(productId, this.dataset.name);
+                        return;
+                    }
+                    
+                    // Show loading on button
+                    LoadingManager.showButton(this, 'Updating...');
+                    
+                    try {
+                        await self.updateProductAuditStatus(productId, action);
+                    } catch (error) {
+                        console.error('Error updating product status:', error);
+                        showToast('Failed to update product status', 'error');
+                    } finally {
+                        LoadingManager.hideButton(this);
+                    }
+                });
+            });
+        },
+
+        openShortOverModal: function(productId, productName) {
+            document.getElementById('short-over-product-id').value = productId;
+            document.getElementById('short-over-product-name').value = productName;
+            
+            // Load existing data if any
+            const existingData = this.shortOverData[productId];
+            if (existingData) {
+                document.getElementById('short-over-type').value = existingData.type;
+                document.getElementById('short-over-quantity').value = Math.abs(existingData.quantity);
+                document.getElementById('short-over-notes').value = existingData.notes || '';
+            } else {
+                document.getElementById('short-over-form').reset();
+            }
+            
+            document.getElementById('short-over-modal').style.display = 'block';
+        },
+
+        saveShortOverDetails: async function() {
+            const submitBtn = document.getElementById('save-short-over');
+            LoadingManager.showButton(submitBtn, 'Saving...');
+            
+            try {
+                const productId = document.getElementById('short-over-product-id').value;
+                const type = document.getElementById('short-over-type').value;
+                const quantity = parseInt(document.getElementById('short-over-quantity').value);
+                const notes = document.getElementById('short-over-notes').value.trim();
+                
+                if (!type || quantity < 0) {
+                    showToast('Please fill all required fields with valid values', 'error');
+                    LoadingManager.hideButton(submitBtn);
+                    return;
+                }
+                
+                // Save short/over data locally
+                this.shortOverData[productId] = {
+                    type: type,
+                    quantity: type === 'short' ? quantity : -quantity,
+                    notes: notes,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: this.currentUser.uid
+                };
+                
+                // Save to audit record in Firestore
+                await db.collection('database').doc('inventory').collection('auditRecords')
+                    .doc(this.currentAudit.id)
+                    .update({
+                        shortOverData: this.shortOverData,
+                        updatedAt: new Date().toISOString()
+                    });
+                
+                showToast('Short/Over details saved successfully', 'success');
+                this.closeModal('short-over-modal');
+                
+                // Update UI
+                this.renderAuditProducts();
+            } catch (error) {
+                console.error('Error saving short/over data:', error);
+                showToast('Failed to save short/over details', 'error');
+            } finally {
+                LoadingManager.hideButton(submitBtn);
+            }
+        },
+
+        updateProductAuditStatus: async function(productId, status) {
+            try {
+                // Validate status transitions
+                const product = this.allProducts.find(p => p.id === productId);
+                if (!product) {
+                    throw new Error('Product not found');
+                }
+                
+                // Prevent invalid transitions
+                if (product.auditStatus === 'approved') {
+                    showToast('Approved products cannot be changed', 'warning');
+                    return;
+                }
+                
+                // When a product is marked as review, it cannot go back to pending
+                if (product.auditStatus === 'review' && status === 'pending') {
+                    showToast('Products marked for review cannot be set back to pending', 'warning');
+                    return;
+                }
+                
+                // Clear short/over data when approving a product
+                if (status === 'approved' && this.shortOverData[productId]) {
+                    delete this.shortOverData[productId];
+                    
+                    // Update audit record to remove short/over data for this product
+                    await db.collection('database').doc('inventory').collection('auditRecords')
+                        .doc(this.currentAudit.id)
+                        .update({
+                            shortOverData: this.shortOverData,
+                            updatedAt: new Date().toISOString()
+                        });
+                }
+                
+                // Update in Firestore
+                await db.collection('database').doc('inventory').collection('products')
+                    .doc(productId)
+                    .update({
+                        auditStatus: status,
+                        auditUpdatedAt: new Date().toISOString(),
+                        auditUpdatedBy: this.currentUser.uid
+                    });
+                
+                // Update audit record stats in Firestore
+                await this.updateAuditStats(status);
+                
+                // Show success message
+                showToast(`Product marked as ${status}`, 'success');
+                
+                // Update local data
+                const index = this.allProducts.findIndex(p => p.id === productId);
+                if (index !== -1) {
+                    this.allProducts[index].auditStatus = status;
+                }
+                
+                // Update current audit stats
+                this.updateCurrentAuditStats();
+                
+                // Reload audit products
+                this.loadAuditProducts();
+                
+            } catch (error) {
+                console.error('Error updating product audit status:', error);
+                throw error;
+            }
+        },
+
+        updateAuditStats: async function(updatedStatus) {
+            if (!this.currentAudit) return;
+            
+            try {
+                // Recalculate stats from current products
+                const auditProductIds = this.currentAudit.selectedProducts ? 
+                    this.currentAudit.selectedProducts.map(p => p.id) : [];
+                
+                const auditProducts = this.allProducts.filter(p => auditProductIds.includes(p.id));
+                
+                const approvedCount = auditProducts.filter(p => p.auditStatus === 'approved').length;
+                const reviewCount = auditProducts.filter(p => p.auditStatus === 'review').length;
+                const pendingCount = auditProducts.filter(p => p.auditStatus === 'pending').length;
+                const totalCount = auditProducts.length;
+                const completedCount = approvedCount + reviewCount;
+                const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                
+                // Update audit record in Firestore
+                await db.collection('database').doc('inventory').collection('auditRecords')
+                    .doc(this.currentAudit.id)
+                    .update({
+                        approvedCount: approvedCount,
+                        reviewCount: reviewCount,
+                        pendingCount: pendingCount,
+                        completedProducts: completedCount,
+                        progress: progress,
+                        updatedAt: new Date().toISOString()
+                    });
+                
+                // Update local audit record
+                const auditIndex = this.auditRecords.findIndex(a => a.id === this.currentAudit.id);
+                if (auditIndex !== -1) {
+                    this.auditRecords[auditIndex].approvedCount = approvedCount;
+                    this.auditRecords[auditIndex].reviewCount = reviewCount;
+                    this.auditRecords[auditIndex].pendingCount = pendingCount;
+                    this.auditRecords[auditIndex].completedProducts = completedCount;
+                    this.auditRecords[auditIndex].progress = progress;
+                    this.auditRecords[auditIndex].updatedAt = new Date().toISOString();
+                    
+                    // Update current audit
+                    this.currentAudit = this.auditRecords[auditIndex];
+                }
+                
+            } catch (error) {
+                console.error('Error updating audit stats:', error);
+            }
+        },
+
+        updateSelectedCount: function() {
+            const count = this.selectedProducts.size;
+            document.getElementById('selected-count').textContent = `${count} products selected`;
+            
+            // Enable/disable create audit button based on selection
+            const createBtn = document.getElementById('create-audit-btn');
+            if (createBtn) {
+                createBtn.disabled = count === 0;
+            }
+        },
+
+        updateBatchActionsVisibility: function() {
+            const batchActions = document.getElementById('batch-actions');
+            if (batchActions) {
+                if (this.selectedProducts.size > 0) {
+                    batchActions.style.display = 'flex';
+                } else {
+                    batchActions.style.display = 'none';
+                }
+            }
+        },
+
+        toggleSelectAllProducts: function(checked) {
+            const checkboxes = document.querySelectorAll('.audit-product-checkbox:not(:disabled)');
+            this.selectedProducts.clear();
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checked;
+                if (checked) {
+                    this.selectedProducts.add(checkbox.dataset.id);
+                }
+            });
+            
+            this.updateSelectedCount();
+            this.updateBatchActionsVisibility();
+        },
+
+        batchUpdateStatus: async function(status) {
+            if (this.selectedProducts.size === 0) {
+                showToast('No products selected', 'warning');
+                return;
+            }
+            
+            const confirmed = await confirmAction(
+                `Are you sure you want to mark ${this.selectedProducts.size} product(s) as ${status}?`,
+                { 
+                    title: 'Confirm Batch Update',
+                    okText: 'Update',
+                    danger: false
+                }
+            );
+            
+            if (!confirmed) return;
+            
+            // Show loading
+            const batchBtn = document.querySelector(`#batch-${status}-btn`);
+            LoadingManager.showButton(batchBtn, 'Updating...');
+            
+            try {
+                // Update each product
+                const updatePromises = Array.from(this.selectedProducts).map(productId => 
+                    this.updateProductAuditStatus(productId, status)
+                );
+                
+                await Promise.all(updatePromises);
+                
+                showToast(`${this.selectedProducts.size} product(s) updated successfully`, 'success');
+                
+                // Clear selection
+                this.clearSelection();
+                
+            } catch (error) {
+                console.error('Error in batch update:', error);
+                showToast('Failed to update some products', 'error');
+            } finally {
+                LoadingManager.hideButton(batchBtn);
+            }
+        },
+
+        clearSelection: function() {
+            this.selectedProducts.clear();
+            document.querySelectorAll('.audit-product-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            this.updateSelectedCount();
+            this.updateBatchActionsVisibility();
+        },
+
+        openNewAuditModal: async function() {
+            try {
+                // Check if there's already an audit in progress
+                const activeAudits = this.auditRecords.filter(a => a.status === 'in_progress');
+                if (activeAudits.length > 0) {
+                    showToast('There is already an audit in progress. Complete it before starting a new one.', 'warning');
+                    return;
+                }
+                
+                // Load products for modal
+                await this.loadProductsForModal();
+                
+                // Show modal
+                document.getElementById('new-audit-modal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error opening new audit modal:', error);
+                showToast('Failed to open audit form', 'error');
+            }
+        },
+
+        loadProductsForModal: async function() {
+            const container = document.getElementById('modal-audit-products');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="loading-skeleton" style="height: 200px;"></div>';
+            
+            try {
+                // Get all products
+                const products = await this.getAllProducts();
+                
+                let html = `
+                    <div class="batch-select-actions">
+                        <div class="select-all-checkbox">
+                            <input type="checkbox" id="select-all-modal-products">
+                            <label for="select-all-modal-products"><i class="fas fa-check-double"></i> Select All Products</label>
+                        </div>
+                        <span id="selected-modal-count" class="badge badge-primary">0 products selected</span>
+                    </div>
+                    <div id="modal-products-list">
+                `;
+                
+                if (products.length === 0) {
+                    html += `
+                        <div class="audit-no-products">
+                            <i class="fas fa-boxes"></i>
+                            <h4>No Products Available</h4>
+                            <p>Add products to your inventory first.</p>
+                    </div>
+                    `;
+                } else {
+                    products.forEach(product => {
+                        const category = this.categories.find(c => c.id === product.category) || { name: 'Uncategorized' };
+                        
+                        html += `
+                            <div class="audit-product-item" data-id="${product.id}">
+                                <input type="checkbox" class="modal-product-checkbox" 
+                                       data-id="${product.id}" data-name="${product.name}">
+                                
+                                <div class="audit-product-info">
+                                    <div class="audit-product-name">${product.name}</div>
+                                    <div class="audit-product-details">
+                                        <span class="audit-product-id">${product.id}</span>
+                                        <span class="audit-product-category">${category.name}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="audit-product-stock">
+                                    <div class="audit-product-stock-value">${product.stock || 0}</div>
+                                    <div class="audit-product-stock-label">In Stock</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                container.innerHTML = html;
+                
+                // Reset selection
+                this.modalSelectedProducts.clear();
+                this.updateModalSelectedCount();
+                
+                // Add event listeners for modal checkboxes
+                this.addModalCheckboxListeners();
+                
+                // Hide selection feedback initially
+                const feedback = document.getElementById('selection-feedback');
+                if (feedback) {
+                    feedback.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Error loading products for modal:', error);
+                container.innerHTML = '<p class="text-danger">Error loading products</p>';
+            }
+        },
+
+        addModalCheckboxListeners: function() {
+            var self = this;
+            
+            // Individual checkboxes
+            document.querySelectorAll('.modal-product-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        self.modalSelectedProducts.add(this.dataset.id);
+                    } else {
+                        self.modalSelectedProducts.delete(this.dataset.id);
+                    }
+                    self.updateModalSelectedCount();
+                });
+            });
+            
+            // Select all checkbox
+            const selectAllCheckbox = document.getElementById('select-all-modal-products');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function(e) {
+                    const checkboxes = document.querySelectorAll('.modal-product-checkbox');
+                    self.modalSelectedProducts.clear();
+                    
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = e.target.checked;
+                        if (e.target.checked) {
+                            self.modalSelectedProducts.add(checkbox.dataset.id);
+                        }
+                    });
+                    
+                    self.updateModalSelectedCount();
+                });
+            }
+        },
+
+        updateModalSelectedCount: function() {
+            const count = this.modalSelectedProducts.size;
+            const selectedCountElement = document.getElementById('selected-modal-count');
+            if (selectedCountElement) {
+                selectedCountElement.textContent = `${count} products selected`;
+            }
+            
+            // Enable/disable create audit button
+            const createBtn = document.getElementById('create-audit-btn');
+            const feedback = document.getElementById('selection-feedback');
+            
+            if (count === 0) {
+                if (createBtn) createBtn.disabled = true;
+                if (feedback) {
+                    feedback.style.display = 'flex';
+                    feedback.className = 'selection-feedback error';
+                    feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Please select at least one product to create an audit</span>';
+                }
+            } else {
+                if (createBtn) createBtn.disabled = false;
+                if (feedback) {
+                    feedback.style.display = 'flex';
+                    feedback.className = 'selection-feedback success';
+                    feedback.innerHTML = `<i class="fas fa-check-circle"></i><span>${count} product(s) selected. Ready to create audit.</span>`;
+                }
+            }
+        },
+
+        handleScopeChange: function(scope) {
+            const optionsContainer = document.getElementById('audit-scope-options');
+            if (!optionsContainer) return;
+            
+            if (scope === 'all') {
+                optionsContainer.style.display = 'none';
+                return;
+            }
+            
+            let optionsHTML = '';
+            
+            if (scope === 'category') {
+                optionsHTML = `
+                    <div class="form-group">
+                        <label><i class="fas fa-filter"></i> Select Categories</label>
+                        <div class="scope-checkboxes" id="scope-categories">
+                            ${this.categories.map(cat => `
+                                <div class="scope-checkbox-item">
+                                    <input type="checkbox" id="cat-${cat.id}" value="${cat.id}" checked>
+                                    <label for="cat-${cat.id}">${cat.name}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (scope === 'stock') {
+                optionsHTML = `
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scope-stock-min"><i class="fas fa-sort-amount-down"></i> Min Stock</label>
+                            <input type="number" id="scope-stock-min" class="form-control" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="scope-stock-max"><i class="fas fa-sort-amount-up"></i> Max Stock</label>
+                            <input type="number" id="scope-stock-max" class="form-control" min="0" value="1000">
+                        </div>
+                    </div>
+                `;
+            } else if (scope === 'status') {
+                optionsHTML = `
+                    <div class="form-group">
+                        <label><i class="fas fa-box"></i> Select Stock Status</label>
+                        <div class="scope-checkboxes" id="scope-status">
+                            <div class="scope-checkbox-item">
+                                <input type="checkbox" id="status-in-stock" value="in_stock" checked>
+                                <label for="status-in-stock">In Stock</label>
+                            </div>
+                            <div class="scope-checkbox-item">
+                                <input type="checkbox" id="status-low-stock" value="low_stock" checked>
+                                <label for="status-low-stock">Low Stock</label>
+                            </div>
+                            <div class="scope-checkbox-item">
+                                <input type="checkbox" id="status-out-of-stock" value="out_of_stock" checked>
+                                <label for="status-out-of-stock">Out of Stock</label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            optionsContainer.innerHTML = optionsHTML;
+            optionsContainer.style.display = 'block';
+        },
+
+        createNewAudit: async function() {
+            const submitBtn = document.getElementById('create-audit-btn');
+            LoadingManager.showButton(submitBtn, 'Creating...');
+            
+            try {
+                // Get form data
+                const title = document.getElementById('audit-title').value.trim();
+                const assignedTo = document.getElementById('audit-assigned-to').value;
+                const notes = document.getElementById('audit-notes').value.trim();
+                const date = document.getElementById('audit-date').value;
+                const scope = document.getElementById('audit-scope').value;
+                
+                // Validation
+                if (!title) {
+                    showToast('Audit title is required', 'error');
+                    LoadingManager.hideButton(submitBtn);
+                    return;
+                }
+                
+                // FIX: Make Sales Manager selection required
+                if (!assignedTo) {
+                    showToast('Sales Manager selection is required', 'error');
+                    LoadingManager.hideButton(submitBtn);
+                    return;
+                }
+                
+                // Check if products are selected
+                if (this.modalSelectedProducts.size === 0) {
+                    showToast('Please select at least one product for the audit', 'error');
+                    LoadingManager.hideButton(submitBtn);
+                    return;
+                }
+                
+                // Get selected products from modal
+                const selectedProducts = [];
+                document.querySelectorAll('.modal-product-checkbox:checked').forEach(checkbox => {
+                    selectedProducts.push({
+                        id: checkbox.dataset.id,
+                        name: checkbox.dataset.name
+                    });
+                });
+                
+                // Apply scope filters based on checked options
+                let filteredProducts = this.applyScopeFilterToSelectedProducts(selectedProducts, scope);
+                
+                if (filteredProducts.length === 0) {
+                    showToast('No products match the selected scope criteria', 'error');
+                    LoadingManager.hideButton(submitBtn);
+                    return;
+                }
+                
+                // Get assigned user info
+                let assignedUserInfo = null;
+                if (assignedTo) {
+                    const assignedUser = this.salesManagers.find(m => m.uid === assignedTo);
+                    if (assignedUser) {
+                        assignedUserInfo = {
+                            uid: assignedUser.uid,
+                            name: assignedUser.fullName,
+                            email: assignedUser.email
+                        };
+                    }
+                }
+                
+                // Initialize stats
+                const totalProducts = filteredProducts.length;
+                const pendingCount = totalProducts; // All products start as pending
+                
+                // Create audit record
+                const auditData = {
+                    title: title,
+                    notes: notes,
+                    auditDate: date,
+                    scope: scope,
+                    selectedProducts: filteredProducts,
+                    createdBy: this.currentUser.uid,
+                    createdByName: this.currentUser.fullName || this.currentUser.name || 'Unknown',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    status: 'in_progress',
+                    branch: getSelectedBranch(),
+                    totalProducts: totalProducts,
+                    approvedCount: 0,
+                    reviewCount: 0,
+                    pendingCount: pendingCount,
+                    completedProducts: 0,
+                    progress: 0,
+                    shortOverData: {}
+                };
+                
+                // Add assigned user if selected
+                if (assignedUserInfo) {
+                    auditData.assignedTo = assignedUserInfo;
+                }
+                
+                // Add scope-specific data based on checked options only
+                if (scope === 'category') {
+                    const selectedCategories = [];
+                    const categoriesElement = document.getElementById('scope-categories');
+                    if (categoriesElement) {
+                        categoriesElement.querySelectorAll('input[type="checkbox"]:checked')
+                            .forEach(cb => selectedCategories.push(cb.value));
+                    }
+                    auditData.categories = selectedCategories;
+                } else if (scope === 'stock') {
+                    auditData.stockMin = document.getElementById('scope-stock-min')?.value || '0';
+                    auditData.stockMax = document.getElementById('scope-stock-max')?.value || '1000';
+                } else if (scope === 'status') {
+                    const selectedStatuses = [];
+                    const statusElement = document.getElementById('scope-status');
+                    if (statusElement) {
+                        statusElement.querySelectorAll('input[type="checkbox"]:checked')
+                            .forEach(cb => selectedStatuses.push(cb.value));
+                    }
+                    auditData.stockStatuses = selectedStatuses;
+                }
+                
+                // Save to Firestore under database -> inventory -> auditRecords
+                const docRef = await db.collection('database').doc('inventory').collection('auditRecords').add(auditData);
+                
+                // Reset all selected products to pending status for this audit
+                await this.resetProductsForAudit(filteredProducts.map(p => p.id));
+                
+                showToast('New audit created successfully!', 'success');
+                
+                // Close modal
+                this.closeModal('new-audit-modal');
+                
+                // FIX: Force page refresh after audit creation
+                // This ensures the audit in progress section loads correctly
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error creating audit:', error);
+                showToast('Failed to create audit: ' + error.message, 'error');
+            } finally {
+                LoadingManager.hideButton(submitBtn);
+            }
+        },
+
+        applyScopeFilterToSelectedProducts: function(selectedProducts, scope) {
+            let filteredProducts = [...selectedProducts];
+            
+            if (scope === 'category') {
+                const selectedCategories = [];
+                const categoriesElement = document.getElementById('scope-categories');
+                if (categoriesElement) {
+                    categoriesElement.querySelectorAll('input[type="checkbox"]:checked')
+                        .forEach(cb => selectedCategories.push(cb.value));
+                }
+                
+                // Only filter if categories are selected
+                if (selectedCategories.length > 0) {
+                    filteredProducts = filteredProducts.filter(product => {
+                        const productData = this.allProducts.find(p => p.id === product.id);
+                        return productData && selectedCategories.includes(productData.category);
+                    });
+                }
+            } else if (scope === 'stock') {
+                const stockMin = parseInt(document.getElementById('scope-stock-min')?.value) || 0;
+                const stockMax = parseInt(document.getElementById('scope-stock-max')?.value) || Infinity;
+                
+                // Always apply stock filter if values are provided
+                filteredProducts = filteredProducts.filter(product => {
+                    const productData = this.allProducts.find(p => p.id === product.id);
+                    const stock = productData ? (productData.stock || 0) : 0;
+                    return stock >= stockMin && stock <= stockMax;
+                });
+            } else if (scope === 'status') {
+                const selectedStatuses = [];
+                const statusElement = document.getElementById('scope-status');
+                if (statusElement) {
+                    statusElement.querySelectorAll('input[type="checkbox"]:checked')
+                        .forEach(cb => selectedStatuses.push(cb.value));
+                }
+                
+                // Only filter if statuses are selected
+                if (selectedStatuses.length > 0) {
+                    filteredProducts = filteredProducts.filter(product => {
+                        const productData = this.allProducts.find(p => p.id === product.id);
+                        if (!productData) return false;
+                        const stockStatus = this.getStockStatus(productData);
+                        return selectedStatuses.includes(stockStatus);
+                    });
+                }
+            }
+            
+            return filteredProducts;
+        },
+
+        resetProductsForAudit: async function(productIds) {
+            try {
+                const batch = db.batch();
+                
+                for (const productId of productIds) {
+                    const productRef = db.collection('database').doc('inventory').collection('products')
+                        .doc(productId);
+                    batch.update(productRef, {
+                        auditStatus: 'pending',
+                        auditUpdatedAt: null,
+                        auditUpdatedBy: null
+                    });
+                }
+                
+                await batch.commit();
+            } catch (error) {
+                console.error('Error resetting products:', error);
+                throw error;
+            }
+        },
+
+        viewAuditDetails: async function(auditId) {
+            try {
+                const audit = this.auditRecords.find(a => a.id === auditId);
+                if (!audit) {
+                    showToast('Audit not found', 'error');
+                    return;
+                }
+                
+                this.editingAuditId = auditId;
+                
+                const container = document.getElementById('audit-details-content');
+                container.innerHTML = '<div class="loading-skeleton" style="height: 300px;"></div>';
+                
+                // Use saved values from Firestore audit record
+                const approvedCount = audit.approvedCount || 0;
+                const reviewCount = audit.reviewCount || 0;
+                const pendingCount = audit.pendingCount || 0;
+                const totalCount = audit.totalProducts || 0;
+                const completedCount = audit.completedProducts || 0;
+                const progress = audit.progress || 0;
+                
+                const date = new Date(audit.createdAt).toLocaleString();
+                const updatedDate = audit.updatedAt ? new Date(audit.updatedAt).toLocaleString() : date;
+                const auditDate = audit.auditDate ? new Date(audit.auditDate).toLocaleDateString() : 'Not set';
+                const statusClass = this.getAuditStatusClass(audit.status);
+                
+                // Get assigned user info
+                let assignedUserInfo = '';
+                if (audit.assignedTo) {
+                    assignedUserInfo = `
+                        <div class="info-item">
+                            <div class="info-label">Assigned To</div>
+                            <div class="info-value">${audit.assignedTo.name} (${audit.assignedTo.email || 'No email'})</div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = `
+                    <div class="audit-details-header">
+                        <div>
+                            <h3>${audit.title}</h3>
+                            <div class="audit-history-status ${statusClass}" style="display: inline-block; margin-top: 5px;">
+                                ${this.formatAuditStatus(audit.status)}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="stat-value">${progress}%</div>
+                            <div class="stat-label">COMPLETE</div>
+                        </div>
+                    </div>
+                    
+                    <div class="audit-details-info">
+                        <div class="info-item">
+                            <div class="info-label">Audit Date</div>
+                            <div class="info-value">${auditDate}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Scope</div>
+                            <div class="info-value">${audit.scope || 'All products'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Branch</div>
+                            <div class="info-value">${audit.branch || 'Main'}</div>
+                        </div>
+                        ${assignedUserInfo}
+                        <div class="info-item">
+                            <div class="info-label">Created By</div>
+                            <div class="info-value">${audit.createdByName}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="info-label">Notes</div>
+                        <div class="info-value" style="white-space: pre-wrap; background: var(--table-header-bg); padding: 15px; border-radius: var(--radius-md);">
+                            ${audit.notes || 'No notes provided'}
+                        </div>
+                    </div>
+                    
+                    <div class="audit-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${totalCount}</div>
+                            <div class="stat-label">Total Products</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${approvedCount}</div>
+                            <div class="stat-label">Approved</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${reviewCount}</div>
+                            <div class="stat-label">Needs Review</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${pendingCount}</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                    </div>
+                    
+                    <div class="audit-progress-container">
+                        <div class="audit-progress-header">
+                            <h4>Audit Progress</h4>
+                            <span>${progress}%</span>
+                        </div>
+                        <div class="audit-progress-bar">
+                            <div class="audit-progress-fill" style="width: ${progress}%"></div>
+                            <div class="audit-progress-percentage">${progress}%</div>
+                        </div>
+                        <div class="audit-progress-stats">
+                            <span><i class="fas fa-check-circle text-success"></i> ${approvedCount} Approved</span>
+                            <span><i class="fas fa-eye text-warning"></i> ${reviewCount} Needs Review</span>
+                            <span><i class="fas fa-clock text-info"></i> ${pendingCount} Pending</span>
+                            <span><i class="fas fa-boxes text-primary"></i> ${totalCount} Total</span>
+                        </div>
+                    </div>
+                    
+                    <div class="audit-details-info">
+                        <div class="info-item">
+                            <div class="info-label">Created</div>
+                            <div class="info-value">${date}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Last Updated</div>
+                            <div class="info-value">${updatedDate}</div>
+                        </div>
+                    </div>
+                    
+                    ${audit.status === 'in_progress' && pendingCount > 0 ? `
+                        <div class="audit-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                <strong>Cannot Complete Audit</strong>
+                                <p>There are ${pendingCount} product(s) still pending review. All products must be either "Approved" or "Needs Review" to complete the audit.</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                
+                // Show/hide buttons based on audit status
+                const editBtn = document.getElementById('edit-audit-btn');
+                const completeBtn = document.getElementById('complete-audit-btn');
+                const exportOptions = document.getElementById('export-options');
+                
+                if (audit.status === 'in_progress') {
+                    if (editBtn) editBtn.style.display = 'inline-block';
+                    if (completeBtn) {
+                        completeBtn.style.display = 'inline-block';
+                        completeBtn.disabled = pendingCount > 0;
+                    }
+                    if (exportOptions) exportOptions.style.display = 'none';
+                } else {
+                    if (editBtn) editBtn.style.display = 'none';
+                    if (completeBtn) completeBtn.style.display = 'none';
+                    if (exportOptions) exportOptions.style.display = 'flex';
+                }
+                
+                // Show modal
+                document.getElementById('audit-details-modal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading audit details:', error);
+                showToast('Failed to load audit details', 'error');
+            }
+        },
+
+        getAuditStatusClass: function(status) {
+            switch(status) {
+                case 'completed': return 'status-approved';
+                case 'in_progress': return 'status-in-progress';
+                case 'cancelled': return 'status-pending';
+                default: return 'status-review';
+            }
+        },
+
+        formatAuditStatus: function(status) {
+            switch(status) {
+                case 'completed': return 'Completed';
+                case 'in_progress': return 'In Progress';
+                case 'cancelled': return 'Cancelled';
+                default: return status.charAt(0).toUpperCase() + status.slice(1);
+            }
+        },
+
+        openEditAuditModal: async function(auditId) {
+            try {
+                const audit = this.auditRecords.find(a => a.id === auditId);
+                if (!audit) {
+                    showToast('Audit not found', 'error');
+                    return;
+                }
+                
+                // Populate edit form
+                document.getElementById('edit-audit-title').value = audit.title;
+                document.getElementById('edit-audit-notes').value = audit.notes || '';
+                
+                // Set assigned to dropdown
+                const assignedSelect = document.getElementById('edit-audit-assigned-to');
+                if (assignedSelect && audit.assignedTo) {
+                    assignedSelect.value = audit.assignedTo.uid;
+                }
+                
+                // Show modal
+                document.getElementById('edit-audit-modal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error opening edit modal:', error);
+                showToast('Failed to open edit form', 'error');
+            }
+        },
+
+        saveAuditChanges: async function() {
+            const submitBtn = document.getElementById('save-audit-changes-btn');
+            LoadingManager.showButton(submitBtn, 'Saving...');
+            
+            try {
+                const title = document.getElementById('edit-audit-title').value.trim();
+                const assignedTo = document.getElementById('edit-audit-assigned-to').value;
+                const notes = document.getElementById('edit-audit-notes').value.trim();
+                
+                if (!title || !assignedTo) {
+                    showToast('Audit title and Sales Manager are required', 'error');
+                    LoadingManager.hideButton(submitBtn);
+                    return;
+                }
+                
+                const updateData = {
+                    title: title,
+                    notes: notes,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // Add assigned user if selected
+                if (assignedTo) {
+                    const assignedUser = this.salesManagers.find(m => m.uid === assignedTo);
+                    if (assignedUser) {
+                        updateData.assignedTo = {
+                            uid: assignedUser.uid,
+                            name: assignedUser.fullName,
+                            email: assignedUser.email
+                        };
+                    }
+                } else {
+                    // Remove assigned user if deselected
+                    updateData.assignedTo = null;
+                }
+                
+                await db.collection('database').doc('inventory').collection('auditRecords')
+                    .doc(this.editingAuditId).update(updateData);
+                
+                showToast('Audit updated successfully', 'success');
+                this.closeModal('edit-audit-modal');
+                await this.refreshData();
+                
+            } catch (error) {
+                console.error('Error saving audit changes:', error);
+                showToast('Failed to save changes', 'error');
+            } finally {
+                LoadingManager.hideButton(submitBtn);
+            }
+        },
+
+        completeAudit: async function(auditId) {
+            const audit = this.auditRecords.find(a => a.id === auditId);
+            if (!audit) {
+                showToast('Audit not found', 'error');
+                return;
+            }
+            
+            // Use saved pending count from Firestore
+            const pendingCount = audit.pendingCount || 0;
+            
+            if (pendingCount > 0) {
+                showToast(`Cannot complete audit. There are ${pendingCount} product(s) still pending review.`, 'error');
+                return;
+            }
+            
+            const confirmed = await confirmAction(
+                'Are you sure you want to complete this audit? This action cannot be undone.',
+                { 
+                    title: 'Complete Audit',
+                    okText: 'Complete',
+                    danger: false
+                }
+            );
+            
+            if (!confirmed) return;
+            
+            const completeBtn = document.getElementById('complete-audit-btn');
+            LoadingManager.showButton(completeBtn, 'Completing...');
+            
+            try {
+                // Use saved values from Firestore
+                const approvedCount = audit.approvedCount || 0;
+                const reviewCount = audit.reviewCount || 0;
+                const totalCount = audit.totalProducts || 0;
+                const progress = 100; // Always 100% when completed
+                
+                await db.collection('database').doc('inventory').collection('auditRecords')
+                    .doc(auditId).update({
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    completedProducts: approvedCount + reviewCount,
+                    progress: progress,
+                    pendingCount: 0
+                });
+                
+                showToast('Audit completed successfully!', 'success');
+                this.closeModal('audit-details-modal');
+                await this.refreshData();
+                
+            } catch (error) {
+                console.error('Error completing audit:', error);
+                showToast('Failed to complete audit', 'error');
+            } finally {
+                LoadingManager.hideButton(completeBtn);
+            }
+        },
+
+        exportAuditAsPDF: async function(auditId) {
+            try {
+                const audit = this.auditRecords.find(a => a.id === auditId);
+                if (!audit) {
+                    showToast('Audit not found', 'error');
+                    return;
+                }
+                
+                // Get products for this audit
+                const products = await this.getAllProducts();
+                const auditProducts = audit.selectedProducts || [];
+                
+                const auditDetails = products.filter(p => 
+                    auditProducts.some(ap => ap.id === p.id)
+                ).map(product => {
+                    const category = this.categories.find(c => c.id === product.category) || { name: 'Uncategorized' };
+                    return {
+                        id: product.id,
+                        name: product.name,
+                        category: category.name,
+                        stock: product.stock || 0,
+                        status: product.auditStatus,
+                        price: product.price || 0,
+                        cost: product.cost || 0
+                    };
+                });
+                
+                // Get sales manager name if assigned
+                let salesManagerName = 'Not Assigned';
+                if (audit.assignedTo && audit.assignedTo.name) {
+                    salesManagerName = audit.assignedTo.name;
+                }
+                
+                // Create PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Title
+                doc.setFontSize(20);
+                doc.text('INVENTORY AUDIT REPORT', 105, 20, { align: 'center' });
+                
+                // Audit Info
+                doc.setFontSize(12);
+                doc.text(`Audit Title: ${audit.title}`, 20, 35);
+                doc.text(`Date: ${new Date(audit.auditDate).toLocaleDateString()}`, 20, 42);
+                doc.text(`Status: ${audit.status}`, 20, 49);
+                doc.text(`Sales Manager: ${salesManagerName}`, 20, 56);
+                doc.text(`Total Products: ${auditDetails.length}`, 20, 63);
+                
+                if (audit.notes) {
+                    doc.text(`Notes: ${audit.notes.substring(0, 100)}${audit.notes.length > 100 ? '...' : ''}`, 20, 70);
+                }
+                
+                // Table
+                const headers = [['ID', 'Product Name', 'Category', 'Stock', 'Status', 'Price (N)']];
+                const data = auditDetails.map(p => [
+                    p.id.substring(0, 10) + '...',
+                    p.name.substring(0, 20) + (p.name.length > 20 ? '...' : ''),
+                    p.category.substring(0, 15) + (p.category.length > 15 ? '...' : ''),
+                    p.stock.toString(),
+                    p.status.charAt(0).toUpperCase() + p.status.slice(1),
+                    `N ${(p.price || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`
+                ]);
+                
+                doc.autoTable({
+                    head: headers,
+                    body: data,
+                    startY: 85,
+                    theme: 'grid',
+                    headStyles: { fillColor: [67, 97, 238] },
+                    columnStyles: {
+                        0: { cellWidth: 30 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 30 },
+                        3: { cellWidth: 20 },
+                        4: { cellWidth: 25 },
+                        5: { cellWidth: 30 }
+                    }
+                });
+                
+                // Summary
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(14);
+                doc.text('Summary', 20, finalY);
+                
+                const stats = {
+                    approved: auditDetails.filter(p => p.status === 'approved').length,
+                    review: auditDetails.filter(p => p.status === 'review').length,
+                    pending: auditDetails.filter(p => p.status === 'pending').length
+                };
+                
+                doc.setFontSize(10);
+                doc.text(`Approved: ${stats.approved}`, 20, finalY + 10);
+                doc.text(`Needs Review: ${stats.review}`, 60, finalY + 10);
+                doc.text(`Pending: ${stats.pending}`, 100, finalY + 10);
+                
+                // Footer
+                doc.setFontSize(8);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, doc.internal.pageSize.height - 10);
+                doc.text(`Generated by: ${this.currentUser.fullName || this.currentUser.name || 'System'}`, 105, doc.internal.pageSize.height - 10, { align: 'center' });
+                doc.text(`Page 1 of 1`, 180, doc.internal.pageSize.height - 10, { align: 'right' });
+                
+                // Save PDF
+                doc.save(`Audit_${audit.title.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
+                
+                showToast('PDF exported successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error exporting PDF:', error);
+                showToast('Failed to export PDF', 'error');
+            }
+        },
+
+        setupRealtimeListeners: function() {
+            var self = this;
+            
+            // Products listener
+            const productsListener = db.collection('database').doc('inventory').collection('products')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            const product = { 
+                                id: change.doc.id, 
+                                ...change.doc.data(),
+                                auditStatus: change.doc.data().auditStatus || 'pending'
+                            };
+                            
+                            const index = self.allProducts.findIndex(p => p.id === product.id);
+                            if (index !== -1) {
+                                self.allProducts[index] = product;
+                            } else {
+                                self.allProducts.push(product);
+                            }
+                            
+                            // Update UI if we have a current audit
+                            if (self.currentAudit) {
+                                // Recalculate and update audit stats when products change
+                                self.updateAuditStats();
+                                self.updateCurrentAuditStats();
+                                self.loadAuditProducts();
+                            }
+                            
+                        } else if (change.type === 'removed') {
+                            const productId = change.doc.id;
+                            self.allProducts = self.allProducts.filter(p => p.id !== productId);
+                        }
+                    });
+                    
+                    // Update summary cards
+                    self.updateSummaryCards();
+                }, error => {
+                    console.error('Products real-time listener error:', error);
+                });
+            
+            this.realtimeListeners.push(productsListener);
+            
+            // Audit records listener (now under database -> inventory)
+            const auditsListener = db.collection('database').doc('inventory').collection('auditRecords')
+                .onSnapshot(snapshot => {
+                    const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    // Sort locally by createdAt in descending order
+                    self.auditRecords = records.sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                        return dateB - dateA;
+                    });
+                    
+                    // Update summary
+                    self.updateSummaryCards();
+                    
+                    // Check for current audit
+                    const currentAudit = self.auditRecords.find(a => a.status === 'in_progress');
+                    if (currentAudit) {
+                        self.currentAudit = currentAudit;
+                        self.scopeFilter = currentAudit.scope || 'all';
+                        self.shortOverData = currentAudit.shortOverData || {};
+                        self.showCurrentAudit();
+                        self.updateCurrentAuditStats();
+                        self.loadAuditProducts();
+                    } else {
+                        self.currentAudit = null;
+                        self.hideCurrentAudit();
+                    }
+                }, error => {
+                    console.error('Audits real-time listener error:', error);
+                });
+            
+            this.realtimeListeners.push(auditsListener);
+        },
+
+        refreshData: async function() {
+            try {
+                LoadingManager.showPageLoading();
+                await this.loadInitialData();
+                showToast('Data refreshed successfully', 'success');
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showToast('Failed to refresh data', 'error');
+            } finally {
+                LoadingManager.hidePageLoading();
+            }
+        },
+
+        closeModal: function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                
+                // Reset form if it's the new audit modal
+                if (modalId === 'new-audit-modal') {
+                    document.getElementById('new-audit-form').reset();
+                    document.getElementById('audit-scope-options').style.display = 'none';
+                    document.getElementById('selection-feedback').style.display = 'none';
+                    document.getElementById('create-audit-btn').disabled = true;
+                    this.modalSelectedProducts.clear();
+                    this.setDefaultDate(); // Reset date to today
+                }
+                
+                // Reset editing audit ID
+                if (modalId === 'audit-details-modal') {
+                    this.editingAuditId = null;
+                }
+                
+                // Reset short/over form
+                if (modalId === 'short-over-modal') {
+                    document.getElementById('short-over-form').reset();
+                }
+            }
+        },
+
+        cleanup: function() {
+            // Unsubscribe from real-time listeners
+            this.realtimeListeners.forEach(unsubscribe => {
+                if (typeof unsubscribe === 'function') {
+                    unsubscribe();
+                }
+            });
+            this.realtimeListeners = [];
+        }
+    };
+
+    // Enhanced Loading Manager with button loading states
+    const LoadingManager = {
+        showButton: function(element, text = 'Loading...') {
+            if (element) {
+                const originalHTML = element.innerHTML;
+                const originalDisabled = element.disabled;
+                
+                element.dataset.originalHTML = originalHTML;
+                element.dataset.originalDisabled = originalDisabled;
+                
+                element.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
+                element.disabled = true;
+                element.classList.add('btn-loading');
+            }
+        },
+        
+        hideButton: function(element) {
+            if (element && element.dataset.originalHTML) {
+                element.innerHTML = element.dataset.originalHTML;
+                element.disabled = element.dataset.originalDisabled === 'true';
+                element.classList.remove('btn-loading');
+                
+                delete element.dataset.originalHTML;
+                delete element.dataset.originalDisabled;
+            }
+        },
+        
+        showPageLoading: function() {
+            const loader = document.createElement('div');
+            loader.id = 'page-loader';
+            loader.className = 'page-loader';
+            loader.innerHTML = `
+                <div class="loader-content">
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading Audit System...</p>
+                </div>
+            `;
+            
+            loader.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.85);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                color: white;
+                font-size: 1.2rem;
+            `;
+            
+            document.body.appendChild(loader);
+        },
+        
+        hidePageLoading: function() {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.remove();
+            }
+        }
+    };
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        var auditManager = new AuditManager();
+        
+        auditManager.initialize().then(function() {
+            window.auditManager = auditManager;
+            
+            // Clean up on page unload
+            window.addEventListener('beforeunload', function() {
+                if (window.auditManager) {
+                    window.auditManager.cleanup();
+                }
+            });
+        }).catch(function(error) {
+            console.error('Initialization error:', error);
+            showToast('Failed to initialize audit system', 'error');
+        });
+    });
+    </script>
+</body>
+</html>
